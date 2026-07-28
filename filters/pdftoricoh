@@ -1,0 +1,24 @@
+#!/bin/bash
+# pdftoricoh - CUPS filter wrapper for the RICOH SP 150 on macOS 26 (Tahoe),
+# Apple Silicon.
+#
+# macOS 26 removed Apple's cgpdftoraster, so CUPS can no longer turn a PDF job
+# into CUPS raster and the vendor filter (which only consumes CUPS raster) never
+# receives data. This wrapper restores the chain using only Apple system
+# frameworks (no Ghostscript, sandbox-friendly):
+#
+#   PDF --(pdftoraster_cg, CoreGraphics)--> CUPS raster
+#       --(RICOH_SP_150Filter)--> printer language
+#
+# CUPS invokes filters as:  filter job user title copies options [filename]
+# pdftoraster_cg reads the filename (argv[6]) or stdin itself. The vendor filter
+# is referenced WITHOUT the ".app" suffix because macOS SIGKILLs executables
+# whose name ends in ".app".
+
+set -o pipefail
+DIR="$(cd "$(dirname "$0")" && pwd)"
+CG="$DIR/pdftoraster_cg"
+RICOH="$DIR/RICOH_SP_150Filter"
+
+"$CG" "$@" | "$RICOH" "$1" "$2" "$3" "$4" "$5"
+exit "${PIPESTATUS[1]}"

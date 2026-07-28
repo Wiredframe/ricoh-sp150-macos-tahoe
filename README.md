@@ -77,7 +77,7 @@ installed (`softwareupdate --install-rosetta --agree-to-license`).
 ## Install
 
 ```bash
-git clone https://github.com/<your-user>/ricoh-sp150-macos-tahoe.git
+git clone https://github.com/Wiredframe/ricoh-sp150-macos-tahoe.git
 cd ricoh-sp150-macos-tahoe
 ./install.sh                 # or: ./install.sh YOUR_PRINTER_QUEUE_NAME
 ```

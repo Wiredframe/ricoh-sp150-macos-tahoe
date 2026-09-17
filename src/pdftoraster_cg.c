@@ -1,9 +1,9 @@
 /*
  * pdftoraster_cg - CUPS filter: PDF -> CUPS raster, using only Apple system
  * frameworks (CoreGraphics/ImageIO) plus libcups. No Ghostscript, so it runs
- * inside the CUPS filter sandbox on macOS 26. Replacement for Apple's removed
- * cgpdftoraster, tuned to the RICOH SP 150 PPD: 8-bit DeviceGray, cupsColorSpace
- * W, 600 dpi.
+ * inside the CUPS filter sandbox on macOS 26/27. Replacement for Apple's removed
+ * cgpdftoraster, tuned to the RICOH SP 150: 8-bit DeviceGray, cupsColorSpace W,
+ * 600 dpi, all nine PPD paper sizes, copies passed on via NumCopies.
  *
  * Orientation: we render into a TOP-LEFT-origin bitmap (flipped context) so the
  * pixel buffer is already in CUPS row order (top first, left to right).
@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreGraphics/CoreGraphics.h>
@@ -63,12 +64,29 @@ int main(int argc, char **argv)
     if (ei && ei[0] == '1') invert = 1;
     const char *png = getenv("PDFTORICOH_DUMP_PNG");
 
-    double mediaW = 595.0, mediaH = 842.0;      /* A4 */
+    /* Paper sizes the SP 150 PPD offers, in points. Default A4. */
+    static const struct { const char *name; double w, h; } papers[] = {
+        { "A4", 595, 842 }, { "Letter", 612, 792 }, { "A5", 420, 595 }, { "A6", 297, 420 },
+        { "B5", 516, 729 }, { "B6", 363, 516 }, { "Executive", 522, 756 },
+        { "16K", 524, 737 }, { "Legal", 612, 1008 },
+    };
+    double mediaW = 595.0, mediaH = 842.0;
+    const char *pname = "A4";
     const char *opts = (argc > 5) ? argv[5] : "";
-    if (strcasestr(opts, "PageSize=Letter") || strcasestr(opts, "media=letter")
-        || strcasestr(opts, "PageSize=letter") || strcasestr(opts, "media=Letter")) {
-        mediaW = 612.0; mediaH = 792.0;
+    const char *keys[] = { "PageSize=", "media=" };
+    for (int k = 0; k < 2 && pname == papers[0].name; k++) {
+        const char *v = strcasestr(opts, keys[k]);
+        if (!v) continue;
+        v += strlen(keys[k]);
+        for (size_t i = 0; i < sizeof papers / sizeof papers[0]; i++) {
+            size_t n = strlen(papers[i].name);
+            if (strncasecmp(v, papers[i].name, n) == 0 && (v[n] == 0 || v[n] == ' ' || v[n] == ',')) {
+                mediaW = papers[i].w; mediaH = papers[i].h; pname = papers[i].name; break;
+            }
+        }
     }
+    int copies = (argc > 4) ? atoi(argv[4]) : 1;
+    if (copies < 1) copies = 1;
 
     CGPDFDocumentRef doc = NULL;
     const char *infile = (argc > 6 && argv[6] && argv[6][0]) ? argv[6] : NULL;
@@ -133,7 +151,8 @@ int main(int argc, char **argv)
         h.cupsColorOrder = CUPS_ORDER_CHUNKED;
         h.cupsColorSpace = CUPS_CSPACE_W;
         h.cupsNumColors = 1;
-        h.NumCopies = 1;
+        h.NumCopies = (unsigned)copies;
+        strncpy(h.cupsPageSizeName, pname, sizeof(h.cupsPageSizeName) - 1);
         h.PageSize[0] = (unsigned)(mediaW + 0.5);
         h.PageSize[1] = (unsigned)(mediaH + 0.5);
         h.cupsPageSize[0] = (float)mediaW;

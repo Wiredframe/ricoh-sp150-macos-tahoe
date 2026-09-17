@@ -1,0 +1,93 @@
+*PPD-Adobe: "4.3"
+*% RICOH SP 150 for macOS 26/27 (native, no vendor driver required).
+*% Minimal PPD written for the pdftoricoh filter chain of
+*% https://github.com/Wiredframe/ricoh-sp150-macos-tahoe
+*FormatVersion: "4.3"
+*FileVersion: "2.0"
+*LanguageVersion: English
+*LanguageEncoding: ISOLatin1
+*PCFileName: "RICSP150.PPD"
+*Manufacturer: "RICOH"
+*Product: "(RICOH SP 150)"
+*ModelName: "RICOH SP 150"
+*ShortNickName: "RICOH SP 150"
+*NickName: "RICOH SP 150 (native LHPL)"
+*PSVersion: "(3010.000) 0"
+*LanguageLevel: "3"
+*ColorDevice: False
+*DefaultColorSpace: Gray
+*FileSystem: False
+*Throughput: "22"
+*LandscapeOrientation: Plus90
+*TTRasterizer: Type42
+*1284DeviceID: "MFG:RICOH;MDL:SP 150;DES:RICOH SP 150;CMD:GDI;CLS:PRINTER;"
+*cupsVersion: 2.3
+*cupsModelNumber: 0
+*cupsFilter: "application/pdf 0 pdftoricoh"
+
+*OpenUI *PageSize/Media Size: PickOne
+*OrderDependency: 10 AnySetup *PageSize
+*DefaultPageSize: A4
+*PageSize A4/A4: "<</PageSize[595 842]/ImagingBBox null>>setpagedevice"
+*PageSize Letter/US Letter: "<</PageSize[612 792]/ImagingBBox null>>setpagedevice"
+*PageSize A5/A5: "<</PageSize[420 595]/ImagingBBox null>>setpagedevice"
+*PageSize A6/A6: "<</PageSize[297 420]/ImagingBBox null>>setpagedevice"
+*PageSize B5/JIS B5: "<</PageSize[516 729]/ImagingBBox null>>setpagedevice"
+*PageSize B6/JIS B6: "<</PageSize[363 516]/ImagingBBox null>>setpagedevice"
+*PageSize Executive/Executive: "<</PageSize[522 756]/ImagingBBox null>>setpagedevice"
+*PageSize 16K/16K: "<</PageSize[524 737]/ImagingBBox null>>setpagedevice"
+*PageSize Legal/Legal: "<</PageSize[612 1008]/ImagingBBox null>>setpagedevice"
+*CloseUI: *PageSize
+
+*OpenUI *PageRegion/Media Size: PickOne
+*OrderDependency: 10 AnySetup *PageRegion
+*DefaultPageRegion: A4
+*PageRegion A4/A4: "<</PageSize[595 842]/ImagingBBox null>>setpagedevice"
+*PageRegion Letter/US Letter: "<</PageSize[612 792]/ImagingBBox null>>setpagedevice"
+*PageRegion A5/A5: "<</PageSize[420 595]/ImagingBBox null>>setpagedevice"
+*PageRegion A6/A6: "<</PageSize[297 420]/ImagingBBox null>>setpagedevice"
+*PageRegion B5/JIS B5: "<</PageSize[516 729]/ImagingBBox null>>setpagedevice"
+*PageRegion B6/JIS B6: "<</PageSize[363 516]/ImagingBBox null>>setpagedevice"
+*PageRegion Executive/Executive: "<</PageSize[522 756]/ImagingBBox null>>setpagedevice"
+*PageRegion 16K/16K: "<</PageSize[524 737]/ImagingBBox null>>setpagedevice"
+*PageRegion Legal/Legal: "<</PageSize[612 1008]/ImagingBBox null>>setpagedevice"
+*CloseUI: *PageRegion
+
+*DefaultImageableArea: A4
+*ImageableArea A4/A4: "11.9 11.9 583.1 830.1"
+*ImageableArea Letter/US Letter: "11.9 11.9 600.1 780.1"
+*ImageableArea A5/A5: "11.9 11.9 408.1 583.1"
+*ImageableArea A6/A6: "11.9 11.9 285.1 408.1"
+*ImageableArea B5/JIS B5: "11.9 11.9 504.1 717.1"
+*ImageableArea B6/JIS B6: "11.9 11.9 351.1 504.1"
+*ImageableArea Executive/Executive: "11.9 11.9 510.1 744.1"
+*ImageableArea 16K/16K: "11.9 11.9 512.1 725.1"
+*ImageableArea Legal/Legal: "11.9 11.9 600.1 996.1"
+
+*DefaultPaperDimension: A4
+*PaperDimension A4/A4: "595 842"
+*PaperDimension Letter/US Letter: "612 792"
+*PaperDimension A5/A5: "420 595"
+*PaperDimension A6/A6: "297 420"
+*PaperDimension B5/JIS B5: "516 729"
+*PaperDimension B6/JIS B6: "363 516"
+*PaperDimension Executive/Executive: "522 756"
+*PaperDimension 16K/16K: "524 737"
+*PaperDimension Legal/Legal: "612 1008"
+
+*OpenUI *Resolution/Resolution: PickOne
+*OrderDependency: 20 AnySetup *Resolution
+*DefaultResolution: 600dpi
+*Resolution 600dpi/600 dpi: "<</HWResolution[600 600]>>setpagedevice"
+*CloseUI: *Resolution
+
+*OpenUI *ColorModel/Color Mode: PickOne
+*OrderDependency: 20 AnySetup *ColorModel
+*DefaultColorModel: Gray
+*ColorModel Gray/Grayscale: "<</cupsColorSpace 0/cupsBitsPerColor 8>>setpagedevice"
+*CloseUI: *ColorModel
+
+*DefaultFont: Courier
+*Font Courier: Standard "(1.05)" Standard ROM
+*Font Helvetica: Standard "(1.05)" Standard ROM
+*Font Times-Roman: Standard "(1.05)" Standard ROM

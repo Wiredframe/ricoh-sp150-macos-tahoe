@@ -1,16 +1,15 @@
 #!/bin/bash
-# install.sh - restore printing for the RICOH SP 150 on macOS 26 (Tahoe).
+# install.sh - restore printing for the RICOH SP 150 on macOS 26/27, natively.
 #
 # What it does:
-#   1. compiles pdftoraster_cg (PDF to CUPS raster via Apple CoreGraphics)
-#   2. installs it plus the pdftoricoh wrapper into the CUPS filter directory
-#   3. makes a signed, .app-suffix-free copy of your locally installed Ricoh filter
-#   4. points the printer PPD at the wrapper (original PPD is backed up as .orig)
+#   1. compiles pdftoraster_cg (PDF -> CUPS raster via Apple CoreGraphics)
+#   2. compiles rastertolhpl (CUPS raster -> RICOH LHPL stream, JBIG1 via jbigkit)
+#   3. installs both plus the pdftoricoh wrapper into the CUPS filter directory
+#   4. points the printer PPD at the wrapper (original PPD is backed up as .orig),
+#      or adds the printer queue with the bundled PPD if it does not exist yet
 #   5. reloads CUPS
 #
-# It does NOT ship or download Ricoh's proprietary driver. You must install the
-# Ricoh SP 150 driver and add the printer yourself first, so that the vendor
-# filter and the PPD already exist on this machine.
+# No Ricoh software, no Rosetta 2 and no Ghostscript are needed.
 #
 # Usage:  ./install.sh [PRINTER_QUEUE_NAME]        (default: RICOH_SP_150)
 
@@ -19,20 +18,8 @@ set -euo pipefail
 PRINTER="${1:-RICOH_SP_150}"
 DST="/usr/libexec/cups/filter"
 PPD="/etc/cups/ppd/${PRINTER}.ppd"
-VENDOR_APP="$DST/RICOH_SP_150Filter.app"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
-# Pre-flight checks (run before elevating so messages are clear).
-if [ ! -f "$PPD" ]; then
-  echo "ERROR: $PPD not found."
-  echo "Install the Ricoh SP 150 driver and add the printer (queue name '$PRINTER') first."
-  exit 1
-fi
-if [ ! -f "$VENDOR_APP" ]; then
-  echo "ERROR: vendor filter $VENDOR_APP not found."
-  echo "Install the Ricoh SP 150 driver first (it provides RICOH_SP_150Filter.app)."
-  exit 1
-fi
 if ! command -v cc >/dev/null 2>&1; then
   echo "ERROR: no C compiler found. Install the Xcode Command Line Tools:"
   echo "  xcode-select --install"
@@ -45,31 +32,46 @@ if [ "$(id -u)" -ne 0 ]; then
   exec sudo "$0" "$@"
 fi
 
-echo "==> Backing up PPD (once) to ${PPD}.orig"
-[ -f "${PPD}.orig" ] || cp -p "$PPD" "${PPD}.orig"
-
 echo "==> Compiling pdftoraster_cg"
 cc -O2 -o "$DST/pdftoraster_cg" "$HERE/src/pdftoraster_cg.c" \
    -framework CoreGraphics -framework CoreFoundation -framework ImageIO \
    -lcupsimage -lcups
 
+echo "==> Compiling rastertolhpl (with bundled jbigkit)"
+cc -O2 -o "$DST/rastertolhpl" "$HERE/src/rastertolhpl.c" \
+   "$HERE/src/jbig/jbig.c" "$HERE/src/jbig/jbig_ar.c" -I"$HERE/src" \
+   -lcupsimage -lcups
+
 echo "==> Installing pdftoricoh wrapper"
 install -m 0755 -o root -g wheel "$HERE/filters/pdftoricoh" "$DST/pdftoricoh"
-
-echo "==> Creating signed, .app-suffix-free copy of the vendor filter"
-cp "$VENDOR_APP" "$DST/RICOH_SP_150Filter"
-chown root:wheel "$DST/RICOH_SP_150Filter" "$DST/pdftoraster_cg"
-chmod 0755 "$DST/RICOH_SP_150Filter" "$DST/pdftoraster_cg"
+chown root:wheel "$DST/pdftoraster_cg" "$DST/rastertolhpl"
+chmod 0755 "$DST/pdftoraster_cg" "$DST/rastertolhpl"
 
 echo "==> Ad-hoc signing the Mach-O binaries (required on Apple Silicon)"
 codesign -s - --force "$DST/pdftoraster_cg"
-codesign -s - --force "$DST/RICOH_SP_150Filter"
+codesign -s - --force "$DST/rastertolhpl"
 
-echo "==> Pointing the PPD at pdftoricoh"
-/usr/bin/sed -i '' 's#^\*cupsFilter:.*#*cupsFilter: "application/pdf 0 pdftoricoh"#' "$PPD"
+# Leftover from the 1.x install (copy of Ricoh's x86_64 filter): no longer used.
+[ -f "$DST/RICOH_SP_150Filter" ] && rm -f "$DST/RICOH_SP_150Filter"
 
-echo "==> Reloading CUPS"
-launchctl kickstart -k system/org.cups.cupsd 2>/dev/null || killall -HUP cupsd 2>/dev/null || true
+if [ -f "$PPD" ]; then
+  echo "==> Backing up PPD (once) to ${PPD}.orig"
+  [ -f "${PPD}.orig" ] || cp -p "$PPD" "${PPD}.orig"
+  echo "==> Pointing the PPD at pdftoricoh"
+  /usr/bin/sed -i '' 's#^\*cupsFilter:.*#*cupsFilter: "application/pdf 0 pdftoricoh"#' "$PPD"
+  echo "==> Reloading CUPS"
+  launchctl kickstart -k system/org.cups.cupsd 2>/dev/null || killall -HUP cupsd 2>/dev/null || true
+else
+  echo "==> No queue '$PRINTER' yet, adding it with the bundled PPD"
+  URI="$(lpinfo -v 2>/dev/null | awk '/usb:\/\/RICOH\/SP%20150/ {print $2; exit}')"
+  if [ -z "$URI" ]; then
+    echo "ERROR: printer not found on USB. Connect and switch on the SP 150, then re-run."
+    echo "       Or add it manually:  lpadmin -p $PRINTER -E -v 'usb://RICOH/SP%20150?serial=...' -P $HERE/ppd/RICOH_SP_150.ppd"
+    exit 1
+  fi
+  lpadmin -p "$PRINTER" -E -v "$URI" -P "$HERE/ppd/RICOH_SP_150.ppd" -o printer-is-shared=false
+  lpadmin -d "$PRINTER" 2>/dev/null || true
+fi
 
 echo
 echo "Done. Test it by printing any PDF, for example:"

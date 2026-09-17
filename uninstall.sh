@@ -1,10 +1,7 @@
 #!/bin/bash
-# uninstall.sh - revert the RICOH SP 150 filter-chain fix.
+# uninstall.sh - remove the native RICOH SP 150 filter chain and restore the PPD.
 #
-# Restores the original PPD and removes the files this project installed.
-# It does NOT touch Ricoh's own RICOH_SP_150Filter.app.
-#
-# Usage:  ./uninstall.sh [PRINTER_QUEUE_NAME]      (default: RICOH_SP_150)
+# Usage:  ./uninstall.sh [PRINTER_QUEUE_NAME]        (default: RICOH_SP_150)
 
 set -euo pipefail
 
@@ -20,14 +17,13 @@ fi
 if [ -f "${PPD}.orig" ]; then
   echo "==> Restoring original PPD"
   cp -p "${PPD}.orig" "$PPD"
-else
-  echo "==> No ${PPD}.orig backup found, leaving PPD as is"
+  rm -f "${PPD}.orig"
 fi
 
-echo "==> Removing installed filters"
-rm -f "$DST/pdftoraster_cg" "$DST/pdftoricoh" "$DST/RICOH_SP_150Filter"
+echo "==> Removing filters"
+rm -f "$DST/pdftoricoh" "$DST/pdftoraster_cg" "$DST/rastertolhpl" "$DST/RICOH_SP_150Filter"
 
 echo "==> Reloading CUPS"
 launchctl kickstart -k system/org.cups.cupsd 2>/dev/null || killall -HUP cupsd 2>/dev/null || true
 
-echo "Done."
+echo "Done. Ricoh's own RICOH_SP_150Filter.app (if installed) was left untouched."

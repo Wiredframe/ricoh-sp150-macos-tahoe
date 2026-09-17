@@ -74,6 +74,18 @@ CUPS. Then print any PDF.
 The default queue name is `RICOH_SP_150`. If yours differs, find it with
 `lpstat -p` and pass it as the first argument.
 
+## Remove Ricoh's driver
+
+Once the native chain works, nothing from Ricoh's package is needed anymore:
+
+```bash
+./remove-ricoh-driver.sh     # or: ./remove-ricoh-driver.sh YOUR_PRINTER_QUEUE_NAME
+```
+
+Switches the queue to the bundled PPD, then deletes `/Library/Printers/RICOH`
+(status service, toner supply tool, dylib), Ricoh's PPDs, `RICOH_SP_150Filter.app`,
+`usbtonerlevel`, `/Applications/RICOH` and the package receipts.
+
 ## Uninstall
 
 ```bash
